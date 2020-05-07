@@ -1,3 +1,24 @@
 <resources>
-    <string name="app_name">SqliteUac</string>
+    <string name="app_name">Sqlite Uac</string>
+    <string name="action_listado">Listado de registros</string>
+    <string name="buscar_registro">Buscar Registro</string>
+    <string name="modificar_registro">Modificar Registro</string>
+    <string name="borrar_registro">Borrar Registro</string>
+
+    <string name="cedula">Cedula:</string>
+    <string name="nombre">Nombre:</string>
+    <string name="estrato">Estrato:</string>
+    <string name="salario">Salario:</string>
+    <string name="nivel_educativo">Nivel educativo:</string>
+    <string name="educativo_bachillerato">Bachillerato</string>
+    <string name="educativo_pregado">Pregrado</string>
+    <string name="educativo_maestro">Maestria</string>
+    <string name="educativo_doctorado">Doctorado</string>
+
+    <string name="bt_guardar">Guardar</string>
+    <string name="bt_cancelar">Cancelar</string>
+    <string name="bt_regresar">Regresar</string>
+    <string name="bt_buscar">Buscar</string>
+
+    <string name="invalido">Invalido</string>
 </resources>

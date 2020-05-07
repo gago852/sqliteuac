@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="spinner_nivel_educativo">
+        <item>Bachillerato</item>
+        <item>Pregrado</item>
+        <item>Maestria</item>
+        <item>Doctorado</item>
+    </string-array>
+</resources>

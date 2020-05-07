@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/tvNombre"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
+        android:text="@string/nombre"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tvCedula"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="@string/cedula"
+        app:layout_constraintStart_toStartOf="@+id/tvNombre"
+        app:layout_constraintTop_toBottomOf="@+id/tvNombre" />
+
+    <TextView
+        android:id="@+id/tvEstrato"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="@string/estrato"
+        app:layout_constraintStart_toStartOf="@+id/tvCedula"
+        app:layout_constraintTop_toBottomOf="@+id/tvCedula" />
+
+    <TextView
+        android:id="@+id/tvSalario"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="@string/salario"
+        app:layout_constraintStart_toStartOf="@+id/tvEstrato"
+        app:layout_constraintTop_toBottomOf="@+id/tvEstrato" />
+
+    <TextView
+        android:id="@+id/tvNivelEducativo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="@string/nivel_educativo"
+        app:layout_constraintStart_toStartOf="@+id/tvSalario"
+        app:layout_constraintTop_toBottomOf="@+id/tvSalario" />
+</androidx.constraintlayout.widget.ConstraintLayout>

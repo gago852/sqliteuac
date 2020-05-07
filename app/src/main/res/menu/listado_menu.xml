@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_modificar_registro"
+        android:title="@string/modificar_registro" />
+    <item
+        android:id="@+id/action_borrar_registro"
+        android:title="@string/borrar_registro" />
+
+</menu>
