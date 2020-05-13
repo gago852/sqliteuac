@@ -1,31 +1,64 @@
 package com.gago.sqliteuac.BasedDatos;
 
-import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 
+import com.amazonaws.auth.CognitoCachingCredentialsProvider;
+import com.amazonaws.mobileconnectors.dynamodbv2.document.DeleteItemOperationConfig;
+import com.amazonaws.mobileconnectors.dynamodbv2.document.PutItemOperationConfig;
+import com.amazonaws.mobileconnectors.dynamodbv2.document.ScanOperationConfig;
+import com.amazonaws.mobileconnectors.dynamodbv2.document.Table;
+import com.amazonaws.mobileconnectors.dynamodbv2.document.UpdateItemOperationConfig;
+import com.amazonaws.mobileconnectors.dynamodbv2.document.datatype.Document;
+import com.amazonaws.mobileconnectors.dynamodbv2.document.datatype.DynamoDBEntry;
+import com.amazonaws.mobileconnectors.dynamodbv2.document.datatype.Primitive;
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.model.ReturnValue;
 import com.gago.sqliteuac.Modelos.Persona;
 
 import java.util.ArrayList;
 
 public class DBControlador {
-    private DBHelper baseDatos;
+    private static final String COGNITO_POOL_ID = "test";
+    private static final Regions MY_REGION = Regions.US_EAST_2;
+    private AmazonDynamoDBClient dbClient;
+    private Table dbTable;
+    private Context context;
+    private final String DYNAMODB_TABLE = "Personas";
+    CognitoCachingCredentialsProvider credentialsProvider;
+    private static volatile DBControlador instancia;
+
 
     public DBControlador(Context context) {
-        this.baseDatos = new DBHelper(context, ModeloDB.NOMBRE_DB, null, 1);
+        this.context = context;
+        credentialsProvider = new CognitoCachingCredentialsProvider(context, COGNITO_POOL_ID, MY_REGION);
+        dbClient = new AmazonDynamoDBClient(credentialsProvider);
+        dbClient.setRegion(Region.getRegion(Regions.US_EAST_2));
+        dbTable = Table.loadTable(dbClient, DYNAMODB_TABLE);
+    }
+
+    public static synchronized DBControlador getInstance(Context context) {
+        if (instancia == null) {
+            instancia = new DBControlador(context);
+        }
+        return instancia;
     }
 
     public long agregarRegistro(Persona persona) {
         try {
-            SQLiteDatabase database = baseDatos.getWritableDatabase();
-            ContentValues values = new ContentValues();
-            values.put(ModeloDB.COL_CEDULA, persona.getCedula());
-            values.put(ModeloDB.COL_NOMBRE, persona.getNombre());
-            values.put(ModeloDB.COL_ESTRATO, persona.getEstrato());
-            values.put(ModeloDB.COL_SALARIO, persona.getSalario());
-            values.put(ModeloDB.COL_NIVEL_EDUCATIVO, persona.getNivel_educativo());
-            return database.insert(ModeloDB.NOMBRE_TABLA, null, values);
+            Document document = new Document();
+            document.put("Cedula", persona.getCedula());
+            document.put("Nombre", persona.getNombre());
+            document.put("Estrato", persona.getEstrato());
+            document.put("Salario", persona.getSalario());
+            document.put("NivelEducativo", persona.getNivel_educativo());
+
+            PutItemOperationConfig putItemOperationConfig = new PutItemOperationConfig();
+            putItemOperationConfig.withReturnValues(ReturnValue.ALL_OLD);
+
+            dbTable.putItem(document, putItemOperationConfig);
+            return 1L;
         } catch (Exception e) {
             return -1L;
         }
@@ -33,17 +66,15 @@ public class DBControlador {
 
     public int actualizarRegistro(Persona persona) {
         try {
-            SQLiteDatabase database = baseDatos.getWritableDatabase();
-            ContentValues valoresActualizados = new ContentValues();
-            valoresActualizados.put(ModeloDB.COL_NOMBRE, persona.getNombre());
-            valoresActualizados.put(ModeloDB.COL_ESTRATO, persona.getEstrato());
-            valoresActualizados.put(ModeloDB.COL_SALARIO, persona.getSalario());
-            valoresActualizados.put(ModeloDB.COL_NIVEL_EDUCATIVO, persona.getNivel_educativo());
+            Document document = new Document();
+            document.put("Cedula", persona.getCedula());
+            document.put("Nombre", persona.getNombre());
+            document.put("Estrato", persona.getEstrato());
+            document.put("Salario", persona.getSalario());
+            document.put("NivelEducativo", persona.getNivel_educativo());
 
-            String campoParaActualizar = ModeloDB.COL_CEDULA + " = ?";
-            String[] argumentosParaActualizar = {String.valueOf(persona.getCedula())};
-
-            return database.update(ModeloDB.NOMBRE_TABLA, valoresActualizados, campoParaActualizar, argumentosParaActualizar);
+            dbTable.updateItem(document, new Primitive(persona.getCedula()), new UpdateItemOperationConfig().withReturnValues(ReturnValue.UPDATED_NEW));
+            return 1;
         } catch (Exception e) {
             return 0;
         }
@@ -51,9 +82,8 @@ public class DBControlador {
 
     public int borrarRegistro(Persona persona) {
         try {
-            SQLiteDatabase database = baseDatos.getWritableDatabase();
-            String[] argumentos = {String.valueOf(persona.getCedula())};
-            return database.delete(ModeloDB.NOMBRE_TABLA, ModeloDB.COL_CEDULA + " = ?", argumentos);
+            dbTable.deleteItem(new Primitive(persona.getCedula()), new DeleteItemOperationConfig().withReturnValues(ReturnValue.ALL_OLD));
+            return 1;
         } catch (Exception e) {
             return 0;
         }
@@ -61,54 +91,48 @@ public class DBControlador {
 
     public Persona buscarPersona(int cedula) {
 
-        SQLiteDatabase database = baseDatos.getReadableDatabase();
+        Document resultado = dbTable.getItem(new Primitive(cedula));
 
-        String[] columnasConsultar = {ModeloDB.COL_CEDULA, ModeloDB.COL_NOMBRE, ModeloDB.COL_ESTRATO
-                , ModeloDB.COL_SALARIO, ModeloDB.COL_NIVEL_EDUCATIVO};
-        String[] argumento = {String.valueOf(cedula)};
-        Cursor cursor = database.query(ModeloDB.NOMBRE_TABLA, columnasConsultar
-                , ModeloDB.COL_CEDULA + " = ?", argumento, null, null, null);
-
-        if (cursor == null) {
+        if (resultado == null) {
             return null;
         }
-
-        if (!cursor.moveToFirst()) {
-            return null;
-        }
-
-        Persona persona = new Persona(cursor.getInt(0), cursor.getString(1)
-                , cursor.getInt(2), cursor.getInt(3), cursor.getInt(4));
-        cursor.close();
+        DynamoDBEntry nombre = resultado.get("Nombre");
+        DynamoDBEntry estrato = resultado.get("Estrato");
+        DynamoDBEntry salario = resultado.get("Salario");
+        DynamoDBEntry nivelEducativo = resultado.get("NivelEducativo");
+        Persona persona = new Persona(cedula, nombre.asString()
+                , estrato.asInt(), salario.asInt(), nivelEducativo.asInt());
         return persona;
     }
 
     public ArrayList<Persona> optenerRegistros() {
+        ScanOperationConfig scanOperationConfig = new ScanOperationConfig();
+        ArrayList<String> atributos = new ArrayList<>();
+        atributos.add("Cedula");
+        atributos.add("Nombre");
+        atributos.add("Estrato");
+        atributos.add("Salario");
+        atributos.add("NivelEducativo");
+        scanOperationConfig.withAttributesToGet(atributos);
+        ArrayList<Document> documents = (ArrayList<Document>) dbTable.scan(scanOperationConfig).getAllResults();
+
+        if (documents == null) {
+            return new ArrayList<>();
+        }
+
         ArrayList<Persona> personas = new ArrayList<>();
 
-        SQLiteDatabase database = baseDatos.getReadableDatabase();
-
-        String[] columnasConsultar = {ModeloDB.COL_CEDULA, ModeloDB.COL_NOMBRE, ModeloDB.COL_ESTRATO
-                , ModeloDB.COL_SALARIO, ModeloDB.COL_NIVEL_EDUCATIVO};
-
-        Cursor cursor = database.query(ModeloDB.NOMBRE_TABLA, columnasConsultar
-                , null, null, null, null, null);
-
-        if (cursor == null) {
-            return personas;
-        }
-
-        if (!cursor.moveToFirst()) {
-            return personas;
-        }
-
-        do {
-            Persona persona = new Persona(cursor.getInt(0), cursor.getString(1)
-                    , cursor.getInt(2), cursor.getInt(3), cursor.getInt(4));
+        for (Document document : documents) {
+            DynamoDBEntry cedula = document.get("Cedula");
+            DynamoDBEntry nombre = document.get("Nombre");
+            DynamoDBEntry estrato = document.get("Estrato");
+            DynamoDBEntry salario = document.get("Salario");
+            DynamoDBEntry nivelEducativo = document.get("NivelEducativo");
+            Persona persona = new Persona(cedula.asInt(), nombre.asString()
+                    , estrato.asInt(), salario.asInt(), nivelEducativo.asInt());
             personas.add(persona);
-        } while (cursor.moveToNext());
+        }
 
-        cursor.close();
         return personas;
     }
 }

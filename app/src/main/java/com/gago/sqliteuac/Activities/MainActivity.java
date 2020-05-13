@@ -30,6 +30,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     int estrato, nivelEducativo;
 
+    private String TAG = "DynamoDb_Demo";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,6 +46,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btCancelar = findViewById(R.id.btCancelar);
 
         controlador = new DBControlador(getApplicationContext());
+
+
 
         ArrayAdapter<CharSequence> adapterEstrato = ArrayAdapter.createFromResource(this
                 , R.array.spinner_estrato, R.layout.support_simple_spinner_dropdown_item);
