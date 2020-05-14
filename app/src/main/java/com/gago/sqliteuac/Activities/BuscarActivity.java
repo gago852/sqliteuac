@@ -2,6 +2,7 @@ package com.gago.sqliteuac.Activities;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -13,9 +14,10 @@ import com.gago.sqliteuac.BasedDatos.DBControlador;
 import com.gago.sqliteuac.Modelos.Persona;
 import com.gago.sqliteuac.R;
 
+import java.util.concurrent.ExecutionException;
+
 public class BuscarActivity extends AppCompatActivity implements View.OnClickListener {
 
-    DBControlador controlador;
 
     EditText edCedula;
 
@@ -38,8 +40,6 @@ public class BuscarActivity extends AppCompatActivity implements View.OnClickLis
         tvSalario = findViewById(R.id.tvSalario);
         tvNivel = findViewById(R.id.tvNivelEducativo);
 
-        controlador = new DBControlador(getApplicationContext());
-
 
         btBuscar.setOnClickListener(this);
         btRegresar.setOnClickListener(this);
@@ -49,12 +49,18 @@ public class BuscarActivity extends AppCompatActivity implements View.OnClickLis
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btBuscar:
+                Persona persona = null;
                 try {
                     cedula = Integer.parseInt(edCedula.getText().toString());
+                    BuscarItem buscarItem = new BuscarItem();
+                    persona = buscarItem.execute(cedula).get();
                 } catch (NumberFormatException numEx) {
                     Toast.makeText(getApplicationContext(), "numero muy grande", Toast.LENGTH_SHORT).show();
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                    Toast.makeText(getApplicationContext(), "error a buscar", Toast.LENGTH_SHORT).show();
                 }
-                Persona persona = controlador.buscarPersona(cedula);
+
                 if (persona != null) {
                     tvCedula.setText(String.valueOf(cedula));
                     tvNombre.setText(persona.getNombre());
@@ -86,6 +92,15 @@ public class BuscarActivity extends AppCompatActivity implements View.OnClickLis
             case R.id.btRegresar:
                 finish();
                 break;
+        }
+    }
+
+    private class BuscarItem extends AsyncTask<Integer, Void, Persona> {
+
+        @Override
+        protected Persona doInBackground(Integer... integers) {
+            DBControlador controlador = new DBControlador(getApplicationContext());
+            return controlador.buscarPersona(integers[0]);
         }
     }
 }

@@ -7,7 +7,6 @@ import com.amazonaws.mobileconnectors.dynamodbv2.document.DeleteItemOperationCon
 import com.amazonaws.mobileconnectors.dynamodbv2.document.PutItemOperationConfig;
 import com.amazonaws.mobileconnectors.dynamodbv2.document.ScanOperationConfig;
 import com.amazonaws.mobileconnectors.dynamodbv2.document.Table;
-import com.amazonaws.mobileconnectors.dynamodbv2.document.UpdateItemOperationConfig;
 import com.amazonaws.mobileconnectors.dynamodbv2.document.datatype.Document;
 import com.amazonaws.mobileconnectors.dynamodbv2.document.datatype.DynamoDBEntry;
 import com.amazonaws.mobileconnectors.dynamodbv2.document.datatype.Primitive;
@@ -72,8 +71,9 @@ public class DBControlador {
             document.put("Estrato", persona.getEstrato());
             document.put("Salario", persona.getSalario());
             document.put("NivelEducativo", persona.getNivel_educativo());
-
-            dbTable.updateItem(document, new Primitive(persona.getCedula()), new UpdateItemOperationConfig().withReturnValues(ReturnValue.UPDATED_NEW));
+            PutItemOperationConfig putItemOperationConfig = new PutItemOperationConfig();
+            putItemOperationConfig.withReturnValues(ReturnValue.ALL_OLD);
+            Document retorno = dbTable.putItem(document, putItemOperationConfig);
             return 1;
         } catch (Exception e) {
             return 0;
@@ -101,7 +101,7 @@ public class DBControlador {
         DynamoDBEntry salario = resultado.get("Salario");
         DynamoDBEntry nivelEducativo = resultado.get("NivelEducativo");
         Persona persona = new Persona(cedula, nombre.asString()
-                , estrato.asInt(), salario.asInt(), nivelEducativo.asInt());
+                , estrato.asNumber().intValue(), salario.asNumber().intValue(), nivelEducativo.asNumber().intValue());
         return persona;
     }
 
@@ -109,10 +109,10 @@ public class DBControlador {
         ScanOperationConfig scanOperationConfig = new ScanOperationConfig();
         ArrayList<String> atributos = new ArrayList<>();
         atributos.add("Cedula");
-        atributos.add("Nombre");
         atributos.add("Estrato");
-        atributos.add("Salario");
         atributos.add("NivelEducativo");
+        atributos.add("Nombre");
+        atributos.add("Salario");
         scanOperationConfig.withAttributesToGet(atributos);
         ArrayList<Document> documents = (ArrayList<Document>) dbTable.scan(scanOperationConfig).getAllResults();
 
@@ -121,15 +121,14 @@ public class DBControlador {
         }
 
         ArrayList<Persona> personas = new ArrayList<>();
-
         for (Document document : documents) {
             DynamoDBEntry cedula = document.get("Cedula");
             DynamoDBEntry nombre = document.get("Nombre");
             DynamoDBEntry estrato = document.get("Estrato");
             DynamoDBEntry salario = document.get("Salario");
             DynamoDBEntry nivelEducativo = document.get("NivelEducativo");
-            Persona persona = new Persona(cedula.asInt(), nombre.asString()
-                    , estrato.asInt(), salario.asInt(), nivelEducativo.asInt());
+            Persona persona = new Persona(cedula.asNumber().intValue(), nombre.asString()
+                    , estrato.asNumber().intValue(), salario.asNumber().intValue(), nivelEducativo.asNumber().intValue());
             personas.add(persona);
         }
 

@@ -7,6 +7,7 @@ import androidx.lifecycle.LifecycleObserver;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.MenuItem;
@@ -21,6 +22,7 @@ import com.gago.sqliteuac.Modelos.Persona;
 import com.gago.sqliteuac.R;
 
 import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
 
 public class ListadoActivity extends AppCompatActivity implements LifecycleObserver {
 
@@ -28,7 +30,6 @@ public class ListadoActivity extends AppCompatActivity implements LifecycleObser
 
     ArrayList<Persona> listaPersona;
 
-    DBControlador controlador;
 
     ListaAdapter adapter;
 
@@ -39,12 +40,8 @@ public class ListadoActivity extends AppCompatActivity implements LifecycleObser
 
         lista = findViewById(R.id.listView);
 
-        controlador = new DBControlador(getApplicationContext());
+        poblarLista();
 
-        listaPersona = controlador.optenerRegistros();
-
-        adapter = new ListaAdapter(getApplicationContext(), R.layout.item_lista_layout, listaPersona);
-        lista.setAdapter(adapter);
 
         registerForContextMenu(lista);
     }
@@ -55,9 +52,7 @@ public class ListadoActivity extends AppCompatActivity implements LifecycleObser
 
         if (requestCode == 2) {
             if (resultCode == Activity.RESULT_OK) {
-                ArrayList<Persona> listaServis = controlador.optenerRegistros();
-                ListaAdapter adap = new ListaAdapter(getApplicationContext(), R.layout.item_lista_layout, listaServis);
-                lista.setAdapter(adap);
+                poblarLista();
             }
             if (resultCode == Activity.RESULT_CANCELED) {
                 Toast.makeText(getApplicationContext(), "modificacion cancelada", Toast.LENGTH_SHORT).show();
@@ -95,14 +90,60 @@ public class ListadoActivity extends AppCompatActivity implements LifecycleObser
     }
 
     private void borrarRegistro(int posicion) {
-        int retorno = controlador.borrarRegistro(listaPersona.get(posicion));
+        BorrarItem borrarItem = new BorrarItem();
+        int retorno = 0;
+        try {
+            retorno = borrarItem.execute(listaPersona.get(posicion)).get();
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
         if (retorno == 1) {
             Toast.makeText(getApplicationContext(), "registro eliminado", Toast.LENGTH_SHORT).show();
-            listaPersona = controlador.optenerRegistros();
-            adapter = new ListaAdapter(getApplicationContext(), R.layout.item_lista_layout, listaPersona);
-            lista.setAdapter(adapter);
+            poblarLista();
         } else {
             Toast.makeText(getApplicationContext(), "error al borrar", Toast.LENGTH_SHORT).show();
         }
     }
+
+    private void poblarLista() {
+        ObtenerItems items = new ObtenerItems();
+        ArrayList<Persona> personas = new ArrayList<>();
+        try {
+            personas = new ArrayList<>(items.execute().get());
+            listaPersona = new ArrayList<>(personas);
+            if (adapter == null) {
+                adapter = new ListaAdapter(getApplicationContext(), R.layout.item_lista_layout, listaPersona);
+                lista.setAdapter(adapter);
+            } else {
+                adapter.notifyDataSetChanged();
+            }
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private class ObtenerItems extends AsyncTask<Void, Void, ArrayList<Persona>> {
+
+        @Override
+        protected ArrayList<Persona> doInBackground(Void... voids) {
+            DBControlador controlador = DBControlador.getInstance(getApplicationContext());
+            return controlador.optenerRegistros();
+        }
+
+        @Override
+        protected void onPostExecute(ArrayList<Persona> personas) {
+            super.onPostExecute(personas);
+        }
+    }
+
+    private class BorrarItem extends AsyncTask<Persona, Void, Integer> {
+
+
+        @Override
+        protected Integer doInBackground(Persona... personas) {
+            DBControlador controlador = DBControlador.getInstance(getApplicationContext());
+            return controlador.borrarRegistro(personas[0]);
+        }
+    }
+
 }

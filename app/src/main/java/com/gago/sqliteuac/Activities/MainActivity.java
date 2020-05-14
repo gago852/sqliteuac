@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -19,9 +20,10 @@ import com.gago.sqliteuac.BasedDatos.DBControlador;
 import com.gago.sqliteuac.Modelos.Persona;
 import com.gago.sqliteuac.R;
 
+import java.util.concurrent.ExecutionException;
+
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
-    DBControlador controlador;
 
     EditText edCedula, edNombre, edSalario;
     Spinner spEstrato, spNivel;
@@ -44,8 +46,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         spNivel = findViewById(R.id.spNivelEducativo);
         btGuardar = findViewById(R.id.btGuardar);
         btCancelar = findViewById(R.id.btCancelar);
-
-        controlador = new DBControlador(getApplicationContext());
 
 
 
@@ -96,7 +96,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     int cedula = edCedula.getText().toString().isEmpty() ? 0 : Integer.parseInt(edCedula.getText().toString());
                     int salario = edSalario.getText().toString().isEmpty() ? 0 : Integer.parseInt(edSalario.getText().toString());
                     Persona persona = new Persona(cedula, edNombre.getText().toString(), estrato, salario, nivelEducativo);
-                    long retorno = controlador.agregarRegistro(persona);
+                    CrearItemAsyncTask crearAsync = new CrearItemAsyncTask();
+
+                    long retorno = crearAsync.execute(persona).get();
                     if (retorno != -1) {
                         Toast.makeText(v.getContext(), "registro guardado", Toast.LENGTH_SHORT).show();
                     } else {
@@ -105,6 +107,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     limpiarCampo();
                 } catch (NumberFormatException numEx) {
                     Toast.makeText(getApplicationContext(), "numero muy grande", Toast.LENGTH_SHORT).show();
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                    Toast.makeText(v.getContext(), "registro fallido error en el hilo", Toast.LENGTH_SHORT).show();
                 }
                 break;
             case R.id.btCancelar:
@@ -139,6 +144,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         edCedula.setText("");
         edNombre.setText("");
         edSalario.setText("");
+    }
+
+    private class CrearItemAsyncTask extends AsyncTask<Persona, Void, Long> {
+
+        @Override
+        protected Long doInBackground(Persona... personas) {
+            DBControlador controlador = DBControlador.getInstance(getApplicationContext());
+            return controlador.agregarRegistro(personas[0]);
+        }
+
+
     }
 
 

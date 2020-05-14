@@ -1,5 +1,7 @@
 package com.gago.sqliteuac.Modelos;
 
+import androidx.annotation.NonNull;
+
 public class Persona {
     private int cedula;
     private String nombre;
@@ -53,5 +55,11 @@ public class Persona {
 
     public void setNivel_educativo(int nivel_educativo) {
         this.nivel_educativo = nivel_educativo;
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return this.cedula+" "+this.nombre+" "+this.estrato+" "+this.salario+" "+this.nivel_educativo;
     }
 }

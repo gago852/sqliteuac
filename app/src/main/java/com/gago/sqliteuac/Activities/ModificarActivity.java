@@ -2,6 +2,7 @@ package com.gago.sqliteuac.Activities;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -20,12 +21,11 @@ import com.gago.sqliteuac.Modelos.Persona;
 import com.gago.sqliteuac.R;
 
 import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
 
 public class ModificarActivity extends AppCompatActivity implements View.OnClickListener {
 
     TextView titulo;
-
-    DBControlador controlador;
 
     EditText edCedula, edNombre, edSalario;
     Spinner spEstrato, spNivel;
@@ -49,12 +49,18 @@ public class ModificarActivity extends AppCompatActivity implements View.OnClick
         btCancelar = findViewById(R.id.btCancelar);
 
         titulo.setText(getString(R.string.modificar_registro));
-        controlador = new DBControlador(getApplicationContext());
+        ObtenerItems obtenerItems = new ObtenerItems();
+
 
         Intent i = getIntent();
         indice = i.getIntExtra("indice", 0);
 
-        ArrayList<Persona> list = controlador.optenerRegistros();
+        ArrayList<Persona> list = new ArrayList<>();
+        try {
+            list = obtenerItems.execute().get();
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
 
         Persona persona = list.get(indice);
         cedula = persona.getCedula();
@@ -108,24 +114,48 @@ public class ModificarActivity extends AppCompatActivity implements View.OnClick
             case R.id.btGuardar:
                 try {
                     int salario = edSalario.getText().toString().isEmpty() ? 0 : Integer.parseInt(edSalario.getText().toString());
-                    Persona persona = new Persona(cedula,edNombre.getText().toString()
+                    Persona persona = new Persona(cedula, edNombre.getText().toString()
                             , estrato, salario, nivelEducativo);
-                    int retorno = controlador.actualizarRegistro(persona);
+                    ModificarItem modificarItem = new ModificarItem();
+                    int retorno = modificarItem.execute(persona).get();
                     if (retorno == 1) {
                         Toast.makeText(getApplicationContext(), "actualizacion exitosa", Toast.LENGTH_SHORT).show();
                         setResult(Activity.RESULT_OK);
                         finish();
+
                     } else {
                         Toast.makeText(getApplicationContext(), "fallo en la actualizacion", Toast.LENGTH_SHORT).show();
                     }
                 } catch (NumberFormatException nuEx) {
                     Toast.makeText(getApplicationContext(), "numero muy grande", Toast.LENGTH_SHORT).show();
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                    Toast.makeText(getApplicationContext(), "fallo en la actualizacion hilo", Toast.LENGTH_SHORT).show();
                 }
                 break;
             case R.id.btCancelar:
                 setResult(Activity.RESULT_CANCELED);
                 finish();
                 break;
+        }
+    }
+
+    private class ObtenerItems extends AsyncTask<Void, Void, ArrayList<Persona>> {
+
+        @Override
+        protected ArrayList<Persona> doInBackground(Void... voids) {
+            DBControlador controlador = DBControlador.getInstance(getApplicationContext());
+            return controlador.optenerRegistros();
+        }
+    }
+
+    private class ModificarItem extends AsyncTask<Persona, Void, Integer> {
+
+
+        @Override
+        protected Integer doInBackground(Persona... personas) {
+            DBControlador controlador = DBControlador.getInstance(getApplicationContext());
+            return controlador.actualizarRegistro(personas[0]);
         }
     }
 }
