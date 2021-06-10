@@ -34,6 +34,8 @@ public class ModificarActivity extends AppCompatActivity implements View.OnClick
 
     int estrato, nivelEducativo, indice, cedula;
 
+
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
